@@ -35,7 +35,7 @@
 .fb-modal-content {
   @extend .fb-container;
 
-  @extend .container--small;
+  @extend .container--large;
 
   .modal--default & .modal-title {
     margin-bottom: 20px;

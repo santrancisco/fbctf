@@ -258,19 +258,6 @@ class IndexController extends Controller {
                 <p></p>
               </div>
             </section>
-            <section>
-              <header class="rule-section-header">
-                <h3>{tr('Legal')}</h3>
-                <h6>{tr('Disclaimer')}</h6>
-              </header>
-              <div class="rule-main">
-                <p>
-                  {tr(
-                    'By participating in the contest, you agree to release Facebook and its employees, and the hosting organization from any and all liability, claims or actions of any kind whatsoever for injuries, damages or losses to persons and property which may be sustained in connection with the contest. You acknowledge and agree that Facebook et al is not responsible for technical, hardware or software failures, or other errors or problems which may occur in connection with the contest.',
-                  )}
-                </p>
-              </div>
-            </section>
             <p>
               {tr(
                 'If you have any questions about what is or is not allowed, please ask an organizer.',
