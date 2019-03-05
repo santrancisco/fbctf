@@ -4,8 +4,16 @@ provider "aws" {
   region="ap-southeast-2"
 }
 
+
+variable "dnsname" {
+  type="string"
+  default=""
+}
+
+// Legacy variable to support user's pre-created ACM cert.
 variable "ACM_CERT" {
   type="string"
+  default = ""
 }
 
 
@@ -18,6 +26,19 @@ variable "RDS_USERNAME" {
 variable "RDS_PASSWORD" {
     type = "string"
 }
+### ACM validation
+resource "aws_acm_certificate" "cert" {
+  domain_name       = "${var.dnsname}"
+  validation_method = "DNS"
+}
+
+resource "aws_acm_certificate_validation" "cert" {
+  certificate_arn = "${aws_acm_certificate.cert.arn}"
+  timeouts {
+    create = "10m"
+  }
+}
+
 
 ### Plumbing network
 module "vpc" {
@@ -156,13 +177,20 @@ resource "aws_alb_listener" "front_end" {
   load_balancer_arn = "${aws_alb.main.arn}"
   port              = "443"
   protocol          = "HTTPS"
-  certificate_arn   = "${var.ACM_CERT}"
+  certificate_arn   = "${aws_acm_certificate_validation.cert.certificate_arn}"
 
   default_action {
     target_group_arn = "${aws_alb_target_group.app.arn}"
     type             = "forward"
   }
 }
+
+resource "aws_lb_listener_certificate" "customcert" {
+  count = "${var.ACM_CERT != "" ? 1 : 0}"
+  listener_arn    = "${aws_alb_listener.front_end.arn}"
+  certificate_arn = "${var.ACM_CERT}"
+}
+
 
 resource "aws_lb_listener" "front_end_redirect" {
   load_balancer_arn = "${aws_alb.main.arn}"

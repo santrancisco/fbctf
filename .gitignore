@@ -2,6 +2,10 @@
 /vendor
 /reports
 
+*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform
 # NPM modules
 /node_modules
 
