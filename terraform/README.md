@@ -10,8 +10,8 @@ It may be more reliable to run it in an EC2 instance but I just wanted to play w
 Overall the code works like this:
 
  - First pick a region that you wanna build your ctf and modify the terraform code appropriately.
- - You then go to that region in AWS Console and use Amazon Certificate Manager (ACM) to create a certificate for your domain that you will be pointing to the ALB (eg ctf.awesomedomain.com)
  - The terraform does the following:
+    - Issue an Amazon certificate for the dns entry you want use to CNAME to the load balancer (ALB) of the CTF app. This process will time out after 10 minutes in which time you need to create the dns validation entry to prove the ownership of the domain.
     - Plumbing network infra (1 vpc, 2 public subnet, 2 private subnet) - I didn't bother having a Nat gateway as it adds extra money but if you want servers in private subnet communicating out to the internet, you probably need to modify the code a bit
     - Creating an mysql database for your ctf with your specified username and password in tfvars file
     - Creating the ecs fargate cluster + task definition and ecs service that would execute the task and keeps it alive.
