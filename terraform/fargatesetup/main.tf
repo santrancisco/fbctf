@@ -47,9 +47,9 @@ module "vpc" {
   name = "my-vpc"
   cidr = "10.0.0.0/16"
 
-  azs             = ["ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  azs             = ["ap-southeast-2a", "ap-southeast-2b"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
 
   enable_nat_gateway = false
   enable_vpn_gateway = false
@@ -158,6 +158,9 @@ resource "aws_alb" "main" {
      "${module.web_server_sg_443.this_security_group_id}",
     "${module.web_server_sg_80.this_security_group_id}"
     ]
+  tags = {
+    Terraform = "true"
+  }
 }
 
 resource "aws_alb_target_group" "app" {
@@ -168,7 +171,12 @@ resource "aws_alb_target_group" "app" {
   target_type = "ip"
   health_check = {
     protocol = "HTTPS"
-    unhealthy_threshold  = 5
+    unhealthy_threshold  = 3
+    interval = 60
+    timeouts = 10
+  }
+  tags = {
+    Terraform = "true"
   }
 }
 
@@ -206,8 +214,33 @@ resource "aws_lb_listener" "front_end_redirect" {
       status_code = "HTTP_301"
     }
   }
+
 }
 
+
+
+### Memcached
+
+
+resource "aws_elasticache_subnet_group" "main" {
+  name       = "${var.name}-cache-subnet"
+  subnet_ids = ["${module.vpc.private_subnets}"]
+}             
+
+
+// For PoC we are using 1 memcached node only - in the future we want a route53 internal zone with CNAME to all nodes.
+resource "aws_elasticache_cluster" "main" {
+  cluster_id           = "${var.name}-memcached"
+  engine               = "memcached"
+  node_type            = "cache.m4.large"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.memcached1.4"
+  port                 = 11211
+  subnet_group_name = "${aws_elasticache_subnet_group.main.name}"
+  tags = {
+    Terraform = "true"
+  }
+}
 
 
 ### ECS
@@ -216,6 +249,9 @@ resource "aws_lb_listener" "front_end_redirect" {
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "${var.name}-execution-role-ecs"
   assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
+  tags = {
+    Terraform = "true"
+  }
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -245,14 +281,15 @@ resource "aws_cloudwatch_log_group" "log_group" {
   name = "ecs-${var.name}"
 }
 
+
 # ECS task definition has an important envrionment variable called "RESET_DB". If this environment variable is set, the ECS task will attempt to reset the db to default with admin/password login
 # We only need to do this once and then change the environment variable to be something else eg DONT_RESET_DB so subsequent deployment will not reset the db.
 resource "aws_ecs_task_definition" "app" {
   family                   = "${var.name}"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
+  cpu                      = "1024"
+  memory                   = "4096"
   execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
   container_definitions = <<DEFINITION
 [
@@ -280,7 +317,7 @@ resource "aws_ecs_task_definition" "app" {
           "containerPort": 443
         }
       ],
-      "cpu": 512,
+      "cpu": 800,
       "environment": [
         {
           "name": "DB_HOST",
@@ -304,15 +341,19 @@ resource "aws_ecs_task_definition" "app" {
         }
       ],
       "workingDirectory": "/root",
-      "memory": 1024,
-      "memoryReservation": 800,
-      "image": "registry.hub.docker.com/santrancisco/cmctf:remote",
+      "memory": 4000,
+      "memoryReservation": 2098,
+      "image": "registry.hub.docker.com/santrancisco/sanctf:remote",
       "essential": true,
       "name": "${var.name}"
     }
   ]
 DEFINITION
+  tags = {
+    Terraform = "true"
+  }
 }
+
 
 resource "aws_ecs_service" "main" {
   name            = "${var.name}-ecs-service"
@@ -326,7 +367,7 @@ resource "aws_ecs_service" "main" {
     security_groups = ["${module.mysql_security_group.this_security_group_id}",
     "${module.web_server_sg_443.this_security_group_id}",
     "${module.web_server_sg_80.this_security_group_id}"]
-    subnets         = ["${module.vpc.public_subnets[0]}"]
+    subnets         = ["${module.vpc.private_subnets}"]
   }
 
   load_balancer {
@@ -338,4 +379,7 @@ resource "aws_ecs_service" "main" {
   depends_on = [
     "aws_alb_listener.front_end",
   ]
+  tags = {
+    Terraform = "true"
+  }
 }

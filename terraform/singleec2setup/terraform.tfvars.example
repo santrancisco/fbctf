@@ -1,0 +1,3 @@
+RDS_USERNAME="ctf"
+RDS_PASSWORD="examplepassword"
+ACM_CERT="arn:aws:acm:ap-southeast-2:XXXXXXXXXXXX"

@@ -15,7 +15,7 @@ Overall the code works like this:
     - Plumbing network infra (1 vpc, 2 public subnet, 2 private subnet) - I didn't bother having a Nat gateway as it adds extra money but if you want servers in private subnet communicating out to the internet, you probably need to modify the code a bit
     - Creating an mysql database for your ctf with your specified username and password in tfvars file
     - Creating the ecs fargate cluster + task definition and ecs service that would execute the task and keeps it alive.
-    - Pull my modified version of fbctf from docker hub (https://hub.docker.com/r/santrancisco/cmctf) and deploy it 
+    - Pull my modified version of fbctf from docker hub (https://hub.docker.com/r/santrancisco/sanctf) and deploy it 
 
 Things i ignored and needed to fix in the future:
  

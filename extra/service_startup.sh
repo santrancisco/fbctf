@@ -2,17 +2,6 @@
 
 set -e
 
-function configure_remote_db_from_docker() {
-  if [ ! -z "$RESET_DB" ]; then
-     reset_remote_db_from_docker
-  fi
-  echo "update settings.ini configuration"
-  sed -i "s/DB_HOST = '127.0.0.1'/DB_HOST = '$DB_HOST'/g" /var/www/fbctf/settings.ini
-  sed -i "s/DB_NAME = 'fbctf'/DB_NAME = '$DB_NAME'/g" /var/www/fbctf/settings.ini
-  sed -i "s/DB_USERNAME = 'ctf'/DB_USERNAME = '$DB_USER'/g" /var/www/fbctf/settings.ini
-  sed -i "s/DB_PASSWORD = 'ctf'/DB_PASSWORD = '$DB_PASSWORD'/g" /var/www/fbctf/settings.ini
-}
-
 function reset_remote_db_from_docker() {
   local __u="ctf"
   local __p="ctf"
@@ -70,13 +59,41 @@ chown -R www-data:www-data /var/www/fbctf
 
 sudo -u www-data service hhvm restart
 service nginx restart
-service memcached restart
+
+function configure_remote_db_from_docker() {
+  if [ ! -z "$RESET_DB" ]; then
+     reset_remote_db_from_docker
+  fi
+  echo "update settings.ini configuration with remote mysql address"
+  sed -i "s/DB_HOST = '127.0.0.1'/DB_HOST = '$DB_HOST'/g" /var/www/fbctf/settings.ini
+  sed -i "s/DB_NAME = 'fbctf'/DB_NAME = '$DB_NAME'/g" /var/www/fbctf/settings.ini
+  sed -i "s/DB_USERNAME = 'ctf'/DB_USERNAME = '$DB_USER'/g" /var/www/fbctf/settings.ini
+  sed -i "s/DB_PASSWORD = 'ctf'/DB_PASSWORD = '$DB_PASSWORD'/g" /var/www/fbctf/settings.ini
+}
 
 if [ ! -z "$DB_HOST" ] && [ ! -z "$DB_NAME" ] && [ ! -z "$DB_USER" ] && [ ! -z "$DB_PASSWORD" ] ; then 
   echo 'Using remote db setting'
   configure_remote_db_from_docker
+  service mysql stop
 else
   service mysql restart
+fi
+
+function configure_remote_memcached_for_docker() {
+  echo "update settings.ini configuration with memcached address"
+  sed -i "s/MC_HOST\[\] = 'MCHOST'/MC_HOST\[\] = '$MCHOST'/g" /var/www/fbctf/settings.ini
+}
+
+if [ ! -z "$MCHOST" ]; then 
+  echo 'Using remote memcached setting'
+  configure_remote_memcached_for_docker
+  service mysql stop
+else
+  service memcached restart
+fi
+
+if [ ! -z "$EXITIMMEDIATELY" ]; then
+  exit 0
 fi
 
 while true; do
@@ -89,5 +106,5 @@ while true; do
     service hhvm status
     service nginx status
     # service mysql status
-    service memcached status
+    # service memcached status
 done
