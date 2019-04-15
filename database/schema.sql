@@ -21,9 +21,9 @@
 
 /*!40000 DROP DATABASE IF EXISTS `fbctf`*/;
 
--- CREATE DATABASE /*!32312 IF NOT EXISTS*/ `fbctf` /*!40100 DEFAULT CHARACTER SET latin1 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `fbctf` /*!40100 DEFAULT CHARACTER SET latin1 */;
 
--- USE `fbctf`;
+USE `fbctf`;
 
 --
 -- Table structure for table `levels`

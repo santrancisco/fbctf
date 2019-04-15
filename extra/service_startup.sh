@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 function reset_remote_db() {
   local __u="ctf"
