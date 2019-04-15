@@ -4,10 +4,15 @@ provider "aws" {
   region="ap-southeast-2"
 }
 
+variable "databasename" {
+  type="string"
+  default="democtf"
+}
+
 
 variable "dnsname" {
   type="string"
-  default=""
+  default="ctf.ebfe.pw"
 }
 
 variable "key_name" {
@@ -41,18 +46,7 @@ variable "RDS_USERNAME" {
 variable "RDS_PASSWORD" {
     type = "string"
 }
-### ACM validation
-resource "aws_acm_certificate" "cert" {
-  domain_name       = "${var.dnsname}"
-  validation_method = "DNS"
-}
 
-resource "aws_acm_certificate_validation" "cert" {
-  certificate_arn = "${aws_acm_certificate.cert.arn}"
-  timeouts {
-    create = "10m"
-  }
-}
 
 
 ### Plumbing network
@@ -91,11 +85,14 @@ module "web_server_sg" {
   name        = "${var.name}-web-server"
   description = "Security group for web-server"
   
-  ingress_rules            = ["https-443-tcp","http-80-tcp"]
+  ingress_rules            = ["https-443-tcp","http-80-tcp","ssh-tcp","all-icmp"]
   ingress_cidr_blocks = ["0.0.0.0/0"]
   tags = {
     Terraform = "true"
   }
+  egress_rules = [ "all-all" ]
+  egress_cidr_blocks = ["0.0.0.0/0"]
+
 }
 
 ### Create database
@@ -110,7 +107,7 @@ module "db" {
   instance_class    = "db.t2.micro"
   allocated_storage = 5
 
-  name     = "democtf"
+  name     = "${var.databasename}"
   username = "${var.RDS_USERNAME}"
   password = "${var.RDS_PASSWORD}"
   port     = "3306"
@@ -155,6 +152,7 @@ module "db" {
 
 ### Create EC2 instance
 ## CHange instance type to bigger one when running the event
+## When choosing instance type - remember at least 1gb of ram and be a little generous.
 module "ec2" {
   source =   "terraform-aws-modules/ec2-instance/aws"
   name                   = "fbctf"
@@ -162,7 +160,7 @@ module "ec2" {
   associate_public_ip_address = true
 
   ami = "${data.aws_ami.ubuntu.id}"
-  instance_type = "t2.micro"
+  instance_type = "m4.large"
   key_name = "${var.key_name}"
   monitoring = true
   vpc_security_group_ids = ["${module.web_server_sg.this_security_group_id}"]
@@ -171,23 +169,24 @@ module "ec2" {
 set -ex
 apt-get update
 apt-get install -y git htop
-apt-get install -y apt-utils
-mkdir /opt
+apt-get install -y apt-utils mysql-client
+mkdir /opt || true
 cd /opt
 git clone --depth 1 https://github.com/santrancisco/fbctf.git
 cd fbctf
 
 
 export EXITIMMEDIATELY=true
-export DBHOST=${module.db.this_db_instance_address}
-export DB_NAME=fbctf
+export DB_SCHEMA_PATH=/opt/fbctf/database
+export DB_HOST=${module.db.this_db_instance_address}
+export DB_NAME=${var.databasename}
 export DB_PASSWORD=${var.RDS_PASSWORD}
 export DB_USER=${var.RDS_USERNAME}
 export RESET_DB=true
-export EXITIMMEDIATELY=true
-./extra/provision.sh -m 
-./extra/provision.sh -m  prod -c self
+
+./extra/provision.sh -m  prod -c self -s /opt/fbctf -D ${var.dnsname}
 ./extra/service_startup.sh
 
 EOF
 }
+ 
