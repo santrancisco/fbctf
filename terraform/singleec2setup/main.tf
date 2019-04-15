@@ -174,7 +174,6 @@ mkdir /opt || true
 cd /opt
 git clone --depth 1 https://github.com/santrancisco/fbctf.git
 cd fbctf
-sudo sed -i 's/fbctf/${var.databasename}/g' /opt/fbctf/database/schema.sql
 
 mkdir -p /tmp/composer
 export COMPOSER_HOME=/tmp/composer
@@ -185,9 +184,10 @@ export DB_NAME=${var.databasename}
 export DB_PASSWORD=${var.RDS_PASSWORD}
 export DB_USER=${var.RDS_USERNAME}
 export RESET_DB=true
+
 # Use line below for self signed cert and not generating certbot.sh
-# ./extra/provision.sh -m  prod -c self -s /opt/fbctf
-./extra/provision.sh -m  prod -c certbot -s /opt/fbctf -D ${var.dnsname}
+./extra/provision.sh -m  prod -c self -s /opt/fbctf
+# ./extra/provision.sh -m  prod -c certbot -s /opt/fbctf -D ${var.dnsname}
 ./extra/service_startup.sh
 
 EOF

@@ -19,8 +19,12 @@ function reset_remote_db() {
   echo "Creating DB - $__db"
   mysql -u "$__user" --password="$__pwd" -h $DB_HOST -e "CREATE DATABASE IF NOT EXISTS \`$__db\`;"
 
-  echo "Importing schema..."
-  mysql -u "$__user" --password="$__pwd" -h $DB_HOST "$__db" -e "source $__path/schema.sql;"
+  echo "Importing schema to remotedb..."
+  cp $__path/schema.sql $__path/remoteschema.sql
+  if [ ! -z "$DB_NAME" ]; then
+    sed -i 's/fbctf/${var.databasename}/g' /opt/fbctf/database/remoteschema.sql
+  fi
+  mysql -u "$__user" --password="$__pwd" -h $DB_HOST "$__db" -e "source $__path/remoteschema.sql;"
 
   echo "Importing countries..."
   mysql -u "$__user" --password="$__pwd" -h $DB_HOST "$__db" -e "source $__path/countries.sql;"
