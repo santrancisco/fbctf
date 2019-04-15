@@ -48,8 +48,12 @@ if [[ -e /root/tmp/certbot.sh ]]; then
     /bin/bash /root/tmp/certbot.sh
 fi
 
+# if [[ -e /var/run/hhvm/sock ]]; then
+#     rm -f /var/run/hhvm/sock
+# fi
+
 if [[ -e /var/run/hhvm/sock ]]; then
-    rm -f /var/run/hhvm/sock
+        chown www-data:www-data /var/run/hhvm/sock
 fi
 
 chown -R mysql:mysql /var/lib/mysql
