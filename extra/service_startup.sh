@@ -56,8 +56,8 @@ chown -R mysql:mysql /var/lib/mysql
 chown -R mysql:mysql /var/run/mysqld
 chown -R mysql:mysql /var/log/mysql
 chown -R www-data:www-data /var/www/fbctf
-
-sudo -u www-data service hhvm restart
+service hhvm stop
+service hhvm restart
 service nginx restart
 
 function configure_remote_db_from_docker() {
@@ -97,12 +97,7 @@ if [ ! -z "$EXITIMMEDIATELY" ]; then
 fi
 
 while true; do
-    if [[ -e /var/run/hhvm/sock ]]; then
-        chown www-data:www-data /var/run/hhvm/sock
-    fi
-
     sleep 60
-
     service hhvm status
     service nginx status
     # service mysql status
