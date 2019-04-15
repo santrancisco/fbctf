@@ -22,7 +22,7 @@ function reset_remote_db() {
   echo "Importing schema to remotedb..."
   cp $__path/schema.sql $__path/remoteschema.sql
   if [ ! -z "$DB_NAME" ]; then
-    sed -i 's/fbctf/${var.databasename}/g' /opt/fbctf/database/remoteschema.sql
+    sed -i "s/fbctf/$DB_NAME/g" /opt/fbctf/database/remoteschema.sql
   fi
   mysql -u "$__user" --password="$__pwd" -h $DB_HOST "$__db" -e "source $__path/remoteschema.sql;"
 
